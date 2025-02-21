@@ -66,22 +66,32 @@ class Asteroid {
       translate(this.position.x, this.position.y + this.r);
       rotate(this.heading);
       fill(255);
-      if (this.thrusting) fill(230, 100, 0);
-      // Booster rockets
-      rectMode(CENTER);
-      rect(-this.r / 2, this.r, this.r / 3, this.r / 2);
-      rect(this.r / 2, this.r, this.r / 3, this.r / 2);
-      fill(255);
-      // A triangle
-      beginShape();
-      vertex(-this.r, this.r);
-      vertex(0, -this.r);
-      vertex(this.r, this.r);
-      endShape(CLOSE);
-      rectMode(CENTER);
-      pop();
   
-      this.thrusting = false;
+      beginShape();
+      vertex(0, -this.r * 2);
+      vertex(this.r, this.r * 1.5);
+      vertex(0, this.r);
+      vertex(-this.r, this.r * 1.5);
+      endShape(CLOSE);
+  
+  //     if (this.thrusting) fill(230, 100, 0);
+  
+  //     // Booster rockets
+  //     rectMode(CENTER);
+  //     rect(-this.r / 2, this.r, this.r / 3, this.r / 2);
+  //     rect(this.r / 2, this.r, this.r / 3, this.r / 2);
+  
+  //     fill(255);
+  //     // A triangle
+  //     beginShape();
+  //     vertex(-this.r, this.r);
+  //     vertex(0, -this.r);
+  //     vertex(this.r, this.r);
+  //     endShape(CLOSE);
+  //     rectMode(CENTER);
+  //     pop();
+  
+  //     this.thrusting = false;
     }
   }
   
