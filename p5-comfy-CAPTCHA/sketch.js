@@ -1,16 +1,18 @@
+// this example workflow expects 512-inpainting-ema.safetensors to be installed
+// based on 
+
 let workflow;
 let comfy;
 let bg;
 let srcImg;
 let resImg;
 
-function preload() {
-  workflow = loadJSON("workflow_api.json");
-  bg = loadImage("yosemite.jpg");
+function preload() { workflow = loadJSON("img2img.json");
+  bg = loadImage("example.png");
 }
 
 function setup() {
-  createCanvas(1024, 683);
+  createCanvas(768, 768);
   pixelDensity(1);
   srcImg = createGraphics(width, height);
   
@@ -43,7 +45,7 @@ function gotImage(results, err) {
   }
 
   // automatically run again
-  requestImage();
+  // requestImage();
 }
 
 function draw() {
@@ -53,21 +55,6 @@ function draw() {
   srcImg.erase();
   srcImg.circle(mouseX, mouseY, 200);
   srcImg.noErase();
-
-  background(255);
-  // checkerboard pattern (decoration)
-  for (let y = 0; y < height; y += 10) {
-    for (let x = 0; x < width; x += 10) {
-      noStroke();
-      if ((x + y) / 10 % 2 === 0) {
-        fill(255);
-      } else {
-        fill(204);
-      }
-      rect(x, y, 10, 10);
-    }
-  }
-  image(srcImg, 0, 0);
 
   //if we have an image, put it onto the canvas
   if (resImg) {
