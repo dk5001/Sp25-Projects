@@ -11,9 +11,22 @@ class Boid {
   }
 
   run(boids, asteroid) {
-    this.flock(boids);
-    let steerAsteroid = this.faceAsteroid(asteroid);
-    this.applyForce(steerAsteroid);
+    let distanceToAsteroid = p5.Vector.dist(this.position, asteroid.position);
+    let boundary = 200; // Define the boundary distance
+
+    if (distanceToAsteroid < boundary) {
+      this.state = "seek";
+    } else {
+      this.state = "idle";
+    }
+
+    if (this.state === "seek") {
+      let steerAsteroid = this.faceAsteroid(asteroid);
+      this.applyForce(steerAsteroid);
+    } else {
+      this.flock(boids);
+    }
+
     this.update();
     this.borders();
     this.show();

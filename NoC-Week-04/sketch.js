@@ -5,14 +5,37 @@ let asteroid;
 let boid;
 let numBoids = 30;
 let flock;
-let numBoidsSlider;
+let numBoidsSlider, boundarySlider, sepSlider, aliSlider, cohSlider;
+let dampingSlider, topspeedSlider, maxforceSlider;
+let debugCheckbox;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   asteroid = new Asteroid();
 
+  // Boid sliders
   numBoidsSlider = createSlider(0, 500, 100);
   numBoidsSlider.position(10, 10);
+  boundarySlider = createSlider(50, 500, 200);
+  boundarySlider.position(10, 40);
+  sepSlider = createSlider(0, 5, 1.5, 0.1);
+  sepSlider.position(10, 70);
+  aliSlider = createSlider(0, 5, 1.0, 0.1);
+  aliSlider.position(10, 100);
+  cohSlider = createSlider(0, 5, 1.0, 0.1);
+  cohSlider.position(10, 130);
+
+  // Asteroid sliders
+  dampingSlider = createSlider(0.9, 1, 0.995, 0.001);
+  dampingSlider.position(width - 150, 10);
+  topspeedSlider = createSlider(1, 10, 6);
+  topspeedSlider.position(width - 150, 40);
+  maxforceSlider = createSlider(0.01, 1, 0.1, 0.01);
+  maxforceSlider.position(width - 150, 70);
+
+  // Debug checkbox
+  debugCheckbox = createCheckbox('Show Boundary', false);
+  debugCheckbox.position(10, 160);
 
   flock = new Flock();
   // Add an initial set of boids into the system
@@ -26,6 +49,11 @@ function draw() {
   background(0, 50);
 
   let numBoids = numBoidsSlider.value();
+  let boundary = boundarySlider.value();
+  let sepWeight = sepSlider.value();
+  let aliWeight = aliSlider.value();
+  let cohWeight = cohSlider.value();
+
   if (numBoids < flock.boids.length) {
     flock.boids.splice(numBoids, flock.boids.length - numBoids);
   } else if (numBoids > flock.boids.length) {
@@ -35,7 +63,12 @@ function draw() {
     }
   }
 
-  flock.run(asteroid);
+  flock.run(asteroid, boundary, sepWeight, aliWeight, cohWeight);
+
+  // Update asteroid parameters
+  asteroid.damping = dampingSlider.value();
+  asteroid.topspeed = topspeedSlider.value();
+  asteroid.maxforce = maxforceSlider.value();
 
   // Make the asteroid seek the mouse position
   let mousePosition = createVector(mouseX, mouseY);
@@ -45,18 +78,25 @@ function draw() {
   asteroid.update();
   // Wrap edges
   asteroid.wrapEdges();
-  // Draw ship
+  // Draw asteroid
   asteroid.show();
 
-  // fill(0);
-  // text("left right arrows to turn, z to thrust",10,height-5);
+  // Draw debug circle if checkbox is checked
+  if (debugCheckbox.checked()) {
+    noFill();
+    stroke(255, 0, 0);
+    ellipse(asteroid.position.x, asteroid.position.y, boundary);
+  }
 
-  // // Turn or thrust the ship depending on what key is pressed
-  // if (keyIsDown(LEFT_ARROW)) {
-  //   asteroid.turn(-0.03);
-  // } else if (keyIsDown(RIGHT_ARROW)) {
-  //   asteroid.turn(0.03);
-  // } else if (keyIsDown(UP_ARROW)) {
-  //   asteroid.thrust();
-  // }
+  // Labels for sliders
+  fill(255);
+  text("Number of Boids", numBoidsSlider.x * 2 + numBoidsSlider.width, 25);
+  text("Boundary", boundarySlider.x * 2 + boundarySlider.width, 55);
+  text("Separation", sepSlider.x * 2 + sepSlider.width, 85);
+  text("Alignment", aliSlider.x * 2 + aliSlider.width, 115);
+  text("Cohesion", cohSlider.x * 2 + cohSlider.width, 145);
+
+  text("Damping", dampingSlider.x - 80, 25);
+  text("Top Speed", topspeedSlider.x - 80, 55);
+  text("Max Force", maxforceSlider.x - 80, 85);
 }
