@@ -11,7 +11,7 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   asteroid = new Asteroid();
 
-  numBoidsSlider = createSlider(0, 100, 30);
+  numBoidsSlider = createSlider(0, 500, 100);
   numBoidsSlider.position(10, 10);
 
   flock = new Flock();
@@ -37,6 +37,10 @@ function draw() {
 
   flock.run(asteroid);
 
+  // Make the asteroid seek the mouse position
+  let mousePosition = createVector(mouseX, mouseY);
+  asteroid.arrive(mousePosition);
+
   // Update position
   asteroid.update();
   // Wrap edges
@@ -47,12 +51,12 @@ function draw() {
   // fill(0);
   // text("left right arrows to turn, z to thrust",10,height-5);
 
-  // Turn or thrust the ship depending on what key is pressed
-  if (keyIsDown(LEFT_ARROW)) {
-    asteroid.turn(-0.03);
-  } else if (keyIsDown(RIGHT_ARROW)) {
-    asteroid.turn(0.03);
-  } else if (keyIsDown(UP_ARROW)) {
-    asteroid.thrust();
-  }
+  // // Turn or thrust the ship depending on what key is pressed
+  // if (keyIsDown(LEFT_ARROW)) {
+  //   asteroid.turn(-0.03);
+  // } else if (keyIsDown(RIGHT_ARROW)) {
+  //   asteroid.turn(0.03);
+  // } else if (keyIsDown(UP_ARROW)) {
+  //   asteroid.thrust();
+  // }
 }
