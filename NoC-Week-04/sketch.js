@@ -36,6 +36,7 @@ function setup() {
   // Debug checkbox
   debugCheckbox = createCheckbox('Show Boundary', false);
   debugCheckbox.position(10, 160);
+  debugCheckbox.style('color', 'white'); // Set the text color to white
 
   flock = new Flock();
   // Add an initial set of boids into the system
@@ -83,9 +84,11 @@ function draw() {
 
   // Draw debug circle if checkbox is checked
   if (debugCheckbox.checked()) {
+    push();
     noFill();
     stroke(255, 0, 0);
     ellipse(asteroid.position.x, asteroid.position.y, boundary);
+    pop();
   }
 
   // Labels for sliders
