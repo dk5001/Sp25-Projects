@@ -71,9 +71,11 @@ function draw() {
   asteroid.topspeed = topspeedSlider.value();
   asteroid.maxforce = maxforceSlider.value();
 
-  // Make the asteroid seek the mouse position
-  let mousePosition = createVector(mouseX, mouseY);
-  asteroid.arrive(mousePosition);
+  if (mouseIsPressed) {
+    // Make the asteroid seek the mouse position
+    let mousePosition = createVector(mouseX, mouseY);
+    asteroid.arrive(mousePosition);
+  }
 
   // Update position
   asteroid.update();

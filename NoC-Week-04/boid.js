@@ -10,9 +10,9 @@ class Boid {
     this.maxforce = 0.05; // Maximum steering force
   }
 
-  run(boids, asteroid) {
+  run(boids, asteroid, boundary, sepWeight, aliWeight, cohWeight) {
     let distanceToAsteroid = p5.Vector.dist(this.position, asteroid.position);
-    let boundary = 200; // Define the boundary distance
+    // let boundary = 200; // Define the boundary distance
 
     if (distanceToAsteroid < boundary) {
       this.state = "seek";
@@ -24,7 +24,7 @@ class Boid {
       let steerAsteroid = this.faceAsteroid(asteroid);
       this.applyForce(steerAsteroid);
     } else {
-      this.flock(boids);
+      this.flock(boids, sepWeight, aliWeight, cohWeight);
     }
 
     this.update();
@@ -38,14 +38,14 @@ class Boid {
   }
 
   // We accumulate a new acceleration each time based on three rules
-  flock(boids) {
+  flock(boids, sepWeight, aliWeight, cohWeight) {
     let sep = this.separate(boids); // Separation
     let ali = this.align(boids); // Alignment
     let coh = this.cohere(boids); // Cohesion
     // Arbitrarily weight these forces
-    sep.mult(1.5);
-    ali.mult(1.0);
-    coh.mult(1.0);
+    sep.mult(sepWeight);
+    ali.mult(aliWeight);
+    coh.mult(cohWeight);
     // Add the force vectors to acceleration
     this.applyForce(sep);
     this.applyForce(ali);
@@ -84,11 +84,6 @@ class Boid {
     push();
     translate(this.position.x, this.position.y);
     rotate(angle);
-    // beginShape();
-    // vertex(this.r * 2, 0);
-    // vertex(-this.r * 2, -this.r);
-    // vertex(-this.r * 2, this.r);
-    // endShape(CLOSE);
     ellipse(0, 0, this.r * 0.2, this.r * 2)
     ellipse(0, 0, this.r * 2, this.r * 0.2)
     pop();
