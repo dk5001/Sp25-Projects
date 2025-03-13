@@ -71,7 +71,7 @@ function draw() {
   asteroid.topspeed = topspeedSlider.value();
   asteroid.maxforce = maxforceSlider.value();
 
-  if (mouseIsPressed) {
+  if (keyIsDown(32)) { // Spacebar
     // Make the asteroid seek the mouse position
     let mousePosition = createVector(mouseX, mouseY);
     asteroid.arrive(mousePosition);
@@ -88,7 +88,8 @@ function draw() {
   if (debugCheckbox.checked()) {
     push();
     noFill();
-    stroke(255, 0, 0);
+    let boundaryColor = map(sin(frameCount * 0.1), -1, 1, 50, 255);
+    stroke(0, 50, boundaryColor);
     ellipse(asteroid.position.x, asteroid.position.y, boundary);
     pop();
   }
