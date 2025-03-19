@@ -6,20 +6,24 @@ let displayedImages = []; // Array to store 9 images displayed in the grid
 let imageNames = []; // Array to store the names of images for weights lookup
 let categories = ["Calm/Neutral", "Confident/Positive", "Chaotic/Negative"]; // Categories from weights.json
 let scores = { "Calm/Neutral": 0, "Confident/Positive": 0, "Chaotic/Negative": 0 }; // Scoring system
-let captchaTitle = "Choose the most rational state";
-// let captchaSubtitle = "If there are none, click skip";
 let weights; // Object to store the weights from JSON file
 
-let img;
-let capture; // Webcam capture
+// Application state variables
+let appState = "SELECTION"; // Can be "SELECTION" or "RATIONAL_TEST"
+let captchaTitle = "Choose the most rational state";
+let headerColor = [100, 100, 100]; // Initial gray color for header
+let interactionsLocked = false; // Flag to lock interactions
+
+// Selection tracking
 let selectionTime = 0; // Time when the last selection was made
-let showingWebcam = false; // Flag to track if webcam is currently shown
-let webcamStartTime = 0; // Time when webcam started showing
 let selectedCol = -1; // Store the column of the selected tile
 let selectedRow = -1; // Store the row of the selected tile
 let selectionCount = 0; // Count how many tiles are selected
-let headerColor = [100, 100, 100]; // Initial blue color for header
-let interactionsLocked = false; // Flag to lock interactions
+let selectedImage = null; // The currently selected image
+
+// Webcam variables
+let capture; // Webcam capture
+let showingWebcam = false; // Flag to track if webcam is currently shown
 
 function preload() {
   weights = loadJSON('weights.json');
@@ -78,78 +82,111 @@ function draw() {
   textSize(18);
   textAlign(CENTER, TOP);
   text(captchaTitle, width/2, 20);
-  textSize(14);
-  textAlign(LEFT, TOP);
+  // textSize(14);
+  // textAlign(LEFT, TOP);
   // text(captchaSubtitle, 20, 50);
 
-  // Check if we need to transition to webcam
-  if (!showingWebcam && selectionCount === 1 && selectionTime > 0 && millis() - selectionTime > 3000) {
-    showingWebcam = true;
-    console.log("Transitioning to webcam");
-
-    if (!interactionsLocked) {
-      captchaTitle = "ARE YOU RATIONAL?";
-      headerColor = [255, 0, 0]; // Change to red
-      interactionsLocked = true;
-      console.log("Interactions locked");
-    }
+  // Check if we need to transition states
+  if (appState === "SELECTION" && selectionCount === 1 && selectionTime > 0 && millis() - selectionTime > 3000) {
+    transitionToRationalTest();
   }
 
-  // // Check if 5 seconds have passed since webcam appeared
-  // if (showingWebcam && webcamStartTime > 0 && millis() - webcamStartTime > 5000) {
+  // Check if we need to transition to webcam
+  // if (!showingWebcam && selectionCount === 1 && selectionTime > 0 && millis() - selectionTime > 3000) {
+  //   showingWebcam = true;
+  //   webcamStartTime = millis();
+  //   console.log("Transitioning to webcam");
+
+  //   if (!interactionsLocked) {
+  //     captchaTitle = "ARE YOU RATIONAL?";
+  //     headerColor = [255, 0, 0]; // Change to red
+  //     interactionsLocked = true;
+  //     console.log("Interactions locked");
+  //   }
+  // }
+
+  // Get the selected image (if any)
+  if (selectionCount === 1 && selectedCol >= 0 && selectedRow >= 0) {
+    let selectedImgIndex = selectedCol + selectedRow * gridSize;
+    selectedImage = displayedImages[selectedImgIndex];
+  }
+
+  // Draw grid based on current state
+  drawGrid();
+
+  // Draw skip button (only in selection state)
+  if (appState === "SELECTION" && !interactionsLocked) {
+    drawSkipButton();
+  }
+
+  // Display countdown timer if only one tile is selected
+  // if (appState === "SELECTION" && selectionCount === 1 && selectionTime > 0) {
+  //   let timeLeft = 3 - floor((millis() - selectionTime) / 1000);
+  //   if (timeLeft >= 0) {
+  //     fill(0);
+  //     textAlign(CENTER, CENTER);
+  //     textSize(16);
+  //     text(`Scanning in ${timeLeft}...`, width / 2, height - 80);
+  //   }
   // }
 
   // Draw the grid with images
-  for (let i = 0; i < gridSize; i++) {
-    for (let j = 0; j < gridSize; j++) {
-      let x = i * tileSize;
-      let y = j * tileSize + 80; // Offset for header
+  // for (let i = 0; i < gridSize; i++) {
+  //   for (let j = 0; j < gridSize; j++) {
+  //     let x = i * tileSize;
+  //     let y = j * tileSize + 80; // Offset for header
 
-      if (showingWebcam && selectedTiles[i][j]) {
-        // Draw zoomed-in webcam footage in the selected tile
-        capture.loadPixels();
-        for (let k = 0; k < capture.pixels.length; k += 4) {
-          let r = capture.pixels[k];
-          let g = capture.pixels[k + 1];
-          let b = capture.pixels[k + 2];
-          let gray = (r + g + b) / 3;
-          capture.pixels[k] = gray;
-          capture.pixels[k + 1] = gray;
-          capture.pixels[k + 2] = gray;
-        }
-        capture.updatePixels();
-        let zoomedTileSize = tileSize / 2;
-        push();
-        translate(x + tileSize, y);
-        scale(-1, 1);
-        image(capture, 0, 0, tileSize, tileSize, capture.width / 2 - zoomedTileSize / 2, capture.height / 2 - zoomedTileSize / 2, zoomedTileSize, zoomedTileSize);
-        pop();
-      } else {
-        // Draw the image
-        let imgIndex = i + j * gridSize;
-        image(displayedImages[imgIndex], x, y, tileSize, tileSize);
-      }
+  //     if (showingWebcam && selectedTiles[i][j]) {
+  //       // Draw zoomed-in webcam footage in the selected tile
+  //       capture.loadPixels();
+  //       for (let k = 0; k < capture.pixels.length; k += 4) {
+  //         let r = capture.pixels[k];
+  //         let g = capture.pixels[k + 1];
+  //         let b = capture.pixels[k + 2];
+  //         let gray = (r + g + b) / 3;
+  //         capture.pixels[k] = gray;
+  //         capture.pixels[k + 1] = gray;
+  //         capture.pixels[k + 2] = gray;
+  //       }
+  //       capture.updatePixels();
+  //       let zoomedTileSize = tileSize / 2;
+  //       push();
+  //       translate(x + tileSize, y);
+  //       scale(-1, 1);
+  //       image(capture, 0, 0, tileSize, tileSize, capture.width / 2 - zoomedTileSize / 2, capture.height / 2 - zoomedTileSize / 2, zoomedTileSize, zoomedTileSize);
+  //       pop();
+  //     } else {
+  //       // If there's a selection and webcam is not yet showing, make all tiles show the selected image
+  //       if (showingWebcam || selectionCount === 0) {
+  //         // Normal display when no selection or after webcam shows
+  //         let imgIndex = i + j * gridSize;
+  //         image(displayedImages[imgIndex], x, y, tileSize, tileSize);
+  //       } else if (selectionCount === 1 && selectedImage) {
+  //         // Show the selected image in all tiles
+  //         image(selectedImage, x, y, tileSize, tileSize);
+  //       }
+  //     }
 
-      // Draw selection overlay
-      if (selectedTiles[i][j]) {
-        fill(100, 0, 0, 100); // Semi-transparent green for selected tiles
-        rect(x, y, tileSize, tileSize);
-      }
+  //     // Draw selection overlay
+  //     if (selectedTiles[i][j]) {
+  //       fill(100, 0, 0, 100); // Semi-transparent green for selected tiles
+  //       rect(x, y, tileSize, tileSize);
+  //     }
 
-      // Draw grid lines
-      stroke(255);
-      strokeWeight(2);
-      noFill();
-      rect(x, y, tileSize, tileSize);
-    }
-  }
+  //     // Draw grid lines
+  //     stroke(255);
+  //     strokeWeight(2);
+  //     noFill();
+  //     rect(x, y, tileSize, tileSize);
+  //   }
+  // }
 
-  // Draw skip button
-  fill(10, 10, 10, 150); // Semi-transparent black for button
-  rect(width - 100, height - 40, 80, 30, 5);
-  fill(255);
-  textAlign(CENTER, CENTER);
-  text("SKIP", width - 60, height - 25);
+  // // Draw skip button
+  // fill(10, 10, 10, 150); // Semi-transparent black for button
+  // rect(width - 100, height - 40, 80, 30, 5);
+  // fill(255);
+  // textAlign(CENTER, CENTER);
+  // text("SKIP", width - 60, height - 25);
 
   // Display scoring information (hidden from user in real CAPTCHA)
   // fill(0);
@@ -167,11 +204,98 @@ function draw() {
     let timeLeft = 3 - floor((millis() - selectionTime) / 1000);
     if (timeLeft >= 0) {
       fill(0);
-      textAlign(CENTER, CENTER);
+      textAlign(CENTER, TOP);
       textSize(16);
-      text(`Scanning in ${timeLeft}...`, width / 2, height - 80);
+      text(`Scanning in ${timeLeft}...`, width / 2, height - 450);
     }
   }
+}
+
+function drawGrid() {
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      let x = i * tileSize;
+      let y = j * tileSize + 80; // Offset for header
+      
+      if (appState === "RATIONAL_TEST" && selectedTiles[i][j]) {
+        // Draw webcam footage in selected tile
+        drawWebcamTile(x, y);
+      } else if (appState === "RATIONAL_TEST") {
+        // Draw selected image in all non-selected tiles
+        image(selectedImage, x, y, tileSize, tileSize);
+      } 
+      // else if (appState === "SELECTION" && selectionCount === 1 && selectedImage) {
+      //   // In selection state with one tile selected, show selected image in all tiles
+      //   image(selectedImage, x, y, tileSize, tileSize);
+      // } 
+      else {
+        // Normal display when no selection
+        let imgIndex = i + j * gridSize;
+        image(displayedImages[imgIndex], x, y, tileSize, tileSize);
+      }
+
+      // Draw selection overlay
+      if (selectedTiles[i][j]) {
+        if (appState === "RATIONAL_TEST") {
+          fill(255, 0, 0, 100); // Red for rational test state
+        } else {
+          fill(100, 0, 0, 100); // Darker red for selection state
+        }
+        rect(x, y, tileSize, tileSize);
+      }
+
+       // Draw grid lines
+       stroke(255);
+       strokeWeight(2);
+       noFill();
+       rect(x, y, tileSize, tileSize);
+    }
+  }
+}
+
+function drawWebcamTile(x, y) {
+  // Draw zoomed-in webcam footage in the selected tile
+  capture.loadPixels();
+  
+  // Convert to grayscale
+  for (let k = 0; k < capture.pixels.length; k += 4) {
+    let r = capture.pixels[k];
+    let g = capture.pixels[k + 1];
+    let b = capture.pixels[k + 2];
+    let gray = (r + g + b) / 3;
+    capture.pixels[k] = gray;
+    capture.pixels[k + 1] = gray;
+    capture.pixels[k + 2] = gray;
+  }
+  capture.updatePixels();
+  
+  // Draw mirrored webcam
+  let zoomedTileSize = tileSize / 2;
+  push();
+  translate(x + tileSize, y);
+  scale(-1, 1);
+  image(capture, 0, 0, tileSize, tileSize, 
+        capture.width / 2 - zoomedTileSize / 2, 
+        capture.height / 2 - zoomedTileSize / 2, 
+        zoomedTileSize, zoomedTileSize);
+  pop();
+}
+
+function drawSkipButton() {
+  fill(10, 10, 10, 150); // Semi-transparent black for button
+  rect(width - 110, height - 40, 100, 30, 5);
+  fill(255);
+  textAlign(CENTER, CENTER);
+  text("SHUFFLE", width - 60, height - 25);
+}
+
+function transitionToRationalTest() {
+  appState = "RATIONAL_TEST";
+  showingWebcam = true;
+  captchaTitle = "ARE YOU RATIONAL?";
+  headerColor = [255, 0, 0]; // Change to red
+  interactionsLocked = true;
+  console.log("Transitioning to rational test");
 }
 
 function mousePressed() {
@@ -274,6 +398,9 @@ function saveResults() {
 }
 
 function resetCaptcha() {
+  // Reset to initial state
+  appState = "SELECTION";
+  
   // Reset selections
   for (let i = 0; i < gridSize; i++) {
     for (let j = 0; j < gridSize; j++) {
@@ -286,16 +413,17 @@ function resetCaptcha() {
     scores[category] = 0;
   }
   
+  // Reset all tracking variables
   selectionTime = 0;
   showingWebcam = false;
-  webcamStartTime = 0;
   selectionCount = 0;
   selectedCol = -1;
   selectedRow = -1;
+  selectedImage = null;
 
   // Reset UI elements
   captchaTitle = "Choose the most rational state";
-  headerColor = [100, 100, 100]; // Reset to blue
+  headerColor = [100, 100, 100]; // Reset to grey
   interactionsLocked = false;
 
   // Reshuffle images for new CAPTCHA
