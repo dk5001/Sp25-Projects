@@ -25,6 +25,11 @@ let selectedImage = null; // The currently selected image
 let capture; // Webcam capture
 let showingWebcam = false; // Flag to track if webcam is currently shown
 
+let userSelectionData = {}; // Object to store user selections
+let rationalTestStartTime = 0;  // When the RATIONAL_TEST state began
+let faceCaptured = false;       // Flag to ensure we only capture once
+let jsonFilename = "";          // Store filename to use for both JSON and image
+
 function preload() {
   weights = loadJSON('weights.json');
 
@@ -82,28 +87,18 @@ function draw() {
   textSize(18);
   textAlign(CENTER, TOP);
   text(captchaTitle, width/2, 20);
-  // textSize(14);
-  // textAlign(LEFT, TOP);
-  // text(captchaSubtitle, 20, 50);
 
   // Check if we need to transition states
   if (appState === "SELECTION" && selectionCount === 1 && selectionTime > 0 && millis() - selectionTime > 3000) {
     transitionToRationalTest();
   }
 
-  // Check if we need to transition to webcam
-  // if (!showingWebcam && selectionCount === 1 && selectionTime > 0 && millis() - selectionTime > 3000) {
-  //   showingWebcam = true;
-  //   webcamStartTime = millis();
-  //   console.log("Transitioning to webcam");
-
-  //   if (!interactionsLocked) {
-  //     captchaTitle = "ARE YOU RATIONAL?";
-  //     headerColor = [255, 0, 0]; // Change to red
-  //     interactionsLocked = true;
-  //     console.log("Interactions locked");
-  //   }
-  // }
+    // Check if we should capture the webcam image (3 seconds after RATIONAL_TEST begins)
+  if (appState === "RATIONAL_TEST" && !faceCaptured && 
+      rationalTestStartTime > 0 && millis() - rationalTestStartTime > 3000) {
+    captureUserFace();
+    faceCaptured = true;
+  }
 
   // Get the selected image (if any)
   if (selectionCount === 1 && selectedCol >= 0 && selectedRow >= 0) {
@@ -118,86 +113,6 @@ function draw() {
   if (appState === "SELECTION" && !interactionsLocked) {
     drawSkipButton();
   }
-
-  // Display countdown timer if only one tile is selected
-  // if (appState === "SELECTION" && selectionCount === 1 && selectionTime > 0) {
-  //   let timeLeft = 3 - floor((millis() - selectionTime) / 1000);
-  //   if (timeLeft >= 0) {
-  //     fill(0);
-  //     textAlign(CENTER, CENTER);
-  //     textSize(16);
-  //     text(`Scanning in ${timeLeft}...`, width / 2, height - 80);
-  //   }
-  // }
-
-  // Draw the grid with images
-  // for (let i = 0; i < gridSize; i++) {
-  //   for (let j = 0; j < gridSize; j++) {
-  //     let x = i * tileSize;
-  //     let y = j * tileSize + 80; // Offset for header
-
-  //     if (showingWebcam && selectedTiles[i][j]) {
-  //       // Draw zoomed-in webcam footage in the selected tile
-  //       capture.loadPixels();
-  //       for (let k = 0; k < capture.pixels.length; k += 4) {
-  //         let r = capture.pixels[k];
-  //         let g = capture.pixels[k + 1];
-  //         let b = capture.pixels[k + 2];
-  //         let gray = (r + g + b) / 3;
-  //         capture.pixels[k] = gray;
-  //         capture.pixels[k + 1] = gray;
-  //         capture.pixels[k + 2] = gray;
-  //       }
-  //       capture.updatePixels();
-  //       let zoomedTileSize = tileSize / 2;
-  //       push();
-  //       translate(x + tileSize, y);
-  //       scale(-1, 1);
-  //       image(capture, 0, 0, tileSize, tileSize, capture.width / 2 - zoomedTileSize / 2, capture.height / 2 - zoomedTileSize / 2, zoomedTileSize, zoomedTileSize);
-  //       pop();
-  //     } else {
-  //       // If there's a selection and webcam is not yet showing, make all tiles show the selected image
-  //       if (showingWebcam || selectionCount === 0) {
-  //         // Normal display when no selection or after webcam shows
-  //         let imgIndex = i + j * gridSize;
-  //         image(displayedImages[imgIndex], x, y, tileSize, tileSize);
-  //       } else if (selectionCount === 1 && selectedImage) {
-  //         // Show the selected image in all tiles
-  //         image(selectedImage, x, y, tileSize, tileSize);
-  //       }
-  //     }
-
-  //     // Draw selection overlay
-  //     if (selectedTiles[i][j]) {
-  //       fill(100, 0, 0, 100); // Semi-transparent green for selected tiles
-  //       rect(x, y, tileSize, tileSize);
-  //     }
-
-  //     // Draw grid lines
-  //     stroke(255);
-  //     strokeWeight(2);
-  //     noFill();
-  //     rect(x, y, tileSize, tileSize);
-  //   }
-  // }
-
-  // // Draw skip button
-  // fill(10, 10, 10, 150); // Semi-transparent black for button
-  // rect(width - 100, height - 40, 80, 30, 5);
-  // fill(255);
-  // textAlign(CENTER, CENTER);
-  // text("SKIP", width - 60, height - 25);
-
-  // Display scoring information (hidden from user in real CAPTCHA)
-  // fill(0);
-  // textSize(12);
-  // textAlign(LEFT, TOP);
-  // text("Debug - Scores:", 10, height - 70);
-  // let yOffset = height - 55;
-  // for (let category in scores) {
-  //   text(`${category}: ${scores[category]}`, 10, yOffset);
-  //   yOffset += 15;
-  // }
 
   // Display countdown timer if only one tile is selected
   if (selectionCount === 1 && selectionTime > 0 && !showingWebcam) {
@@ -295,7 +210,56 @@ function transitionToRationalTest() {
   captchaTitle = "ARE YOU RATIONAL?";
   headerColor = [255, 0, 0]; // Change to red
   interactionsLocked = true;
+  rationalTestStartTime = millis(); // Record the start time
+  faceCaptured = false; // Reset face capture flag
   console.log("Transitioning to rational test");
+
+  // Create a unique filename base to use for both JSON and image
+  jsonFilename = 'user_selection_' + Date.now();
+  
+  // Save the JSON data immediately
+  saveUserSelectionData();
+}
+
+function captureUserFace() {
+  // Create a copy of the current webcam frame
+  let faceImage = createImage(capture.width, capture.height);
+  faceImage.copy(capture, 0, 0, capture.width, capture.height, 0, 0, capture.width, capture.height);
+  
+  // Save the image with the same base filename as the JSON
+  faceImage.save(jsonFilename + '.png');
+  console.log("User face captured and saved");
+}
+
+function saveUserSelectionData() {
+  // Create an object to store the data
+  userSelectionData = {
+    timestamp: Date.now(),
+    selectedImage: "",
+    // selectedPosition: { row: selectedRow, col: selectedCol },
+    weights: {},
+    scores: {},
+    faceCaptureFile: jsonFilename + '.png'  // Add reference to the image file
+  };
+  
+  // Get the image name for the selected tile
+  if (selectedRow >= 0 && selectedCol >= 0) {
+    let imgIndex = selectedCol + selectedRow * gridSize;
+    let imageName = imageNameGrid[imgIndex];
+    userSelectionData.selectedImage = imageName;
+    
+    // Store the weights of the selected image
+    if (weights[imageName]) {
+      userSelectionData.weights = weights[imageName];
+    }
+  }
+  
+  // Store current scores
+  userSelectionData.scores = JSON.parse(JSON.stringify(scores));
+  
+  // Save the data to a JSON file
+  saveJSON(userSelectionData, 'user_selection_' + Date.now() + '.json');
+  console.log("User selection data saved:", userSelectionData);
 }
 
 function mousePressed() {
@@ -416,6 +380,8 @@ function resetCaptcha() {
   // Reset all tracking variables
   selectionTime = 0;
   showingWebcam = false;
+  rationalTestStartTime = 0;
+  faceCaptured = false;
   selectionCount = 0;
   selectedCol = -1;
   selectedRow = -1;
