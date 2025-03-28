@@ -1,5 +1,5 @@
 let teeth = [];
-let numTeeth = 15;
+let numTeeth = 24;
 let bitingTooth;
 let gameOver = false;
 let jawColor;
@@ -29,7 +29,13 @@ function draw() {
     // Draw "Play Again" button
     drawPlayAgainButton();
   } else {
-    background(220);
+    background(100, 200, 255); // Blue background
+
+    textSize(27);
+    textAlign(CENTER, TOP);
+    fill(255);
+    text("PICK ANY TOOTH", width/2, 20);
+    text("AND PASS IT ON", width/2, 60);
     
     // Draw the crocodile's mouth
     drawCrocodileMouth();
@@ -78,11 +84,11 @@ function resetGame() {
   
   // Create teeth in an arc
   let arcRadiusX = 150; 
-  let arcRadiusY = 200; 
+  let arcRadiusY = 400; 
   let centerX = width/2;
   let centerY = height - 100; // Adjusted for new canvas size
-  let startAngle = PI + PI/8;
-  let endAngle = 2 * PI - PI/8;
+  let startAngle = PI + PI/32;
+  let endAngle = 2 * PI - PI/32;
   
   for (let i = 0; i < numTeeth; i++) {
     let angle = map(i, 0, numTeeth - 1, startAngle, endAngle);
@@ -113,7 +119,7 @@ function drawCrocodileMouth() {
   // endShape(CLOSE);
   // Draw the lower jaw as a vertically long semicircle
   let jawRadiusX = 150; 
-  let jawRadiusY = 200;  
+  let jawRadiusY = 400;  
   let jawCenterX = width / 2;
   let jawCenterY = height - 100; // Adjusted for new canvas size
   let jawStartAngle = PI;
