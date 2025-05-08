@@ -88,62 +88,49 @@ function mousePressed() {
 }
 
 function isolateFace() {
-  console.log("Face data:", faces);
   if (!capturedImage || !capturedFace) { 
     console.log("No captured image or no faces detected.");
     return;
   }
   
   console.log("Isolating detected face...");
-  // Create a new graphics buffer
   let buffer = createGraphics(width, height);
-  
-  // Draw the captured image to the buffer
   buffer.image(capturedImage, 0, 0, width, height);
   
-  // Create a mask from the face mesh
   let maskBuffer = createGraphics(width, height);
   maskBuffer.fill(255);
   maskBuffer.noStroke();
   
-  // Get the first face
+  // Get the face
   let face = capturedFace;
   
-  // Begin shape for the face mask
-  maskBuffer.beginShape();
-
-  console.log("Number of face keypoints:", face.keypoints.length);
-
-  // Use all points for a blob
+  // Calculate face bounds 
+  let minX = width, maxX = 0, minY = height, maxY = 0;
+  
+  // Find bounding box of face points
   for (let i = 0; i < face.keypoints.length; i++) {
     let keypoint = face.keypoints[i];
-    maskBuffer.vertex(keypoint.x, keypoint.y);
+    if (keypoint.x < minX) minX = keypoint.x;
+    if (keypoint.x > maxX) maxX = keypoint.x;
+    if (keypoint.y < minY) minY = keypoint.y;
+    if (keypoint.y > maxY) maxY = keypoint.y;
   }
   
-  // // Use the face contour points to create a boundary
-  // // Face contour indices (adjust these based on your model)
-  // // These are approximate indices for facemesh contour
-  // const contourIndices = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109];
+  // Create an elliptical mask that properly covers the face
+  let centerX = (minX + maxX) / 2;
+  let centerY = (minY + maxY) / 2;
+  let faceWidth = (maxX - minX) * 1.2; // Add margin
+  let faceHeight = (maxY - minY) * 1.3; // Add margin
   
-  // // Use more points for a smoother shape or all points for a blob
-  // for (let i = 0; i < face.keypoints.length; i++) {
-  //   let keypoint = face.keypoints[i];
-  //   maskBuffer.vertex(keypoint.x, keypoint.y);
-  // }
+  // Draw an ellipse for the face
+  maskBuffer.ellipse(centerX, centerY, faceWidth, faceHeight);
   
-  maskBuffer.endShape(CLOSE);
-  
-  // Apply the mask to the buffer
+  // Apply the mask
   buffer.loadPixels();
   maskBuffer.loadPixels();
 
-  // Display the mask for debugging
-  image(maskBuffer, 0, 0, width/2, height/2);
-  console.log("Displaying mask");
-  // Early return to just see the mask
-  // return;
-  console.log("Mask dimensions:", maskBuffer.width, maskBuffer.height);
-  console.log("Is mask created properly?", maskBuffer !== null && maskBuffer.width > 0);
+  // For debugging
+  // image(maskBuffer, 0, 0, width/2, height/2);
   
   // Create a new image with black background
   let maskedImage = createImage(width, height);
@@ -154,24 +141,24 @@ function isolateFace() {
     maskedImage.pixels[i] = 0;
   }
   
-// Reset counter before the loop
-copiedPixels = 0;
+  // Reset counter before the loop
+  copiedPixels = 0;
 
-for (let y = 0; y < height; y++) {
-  for (let x = 0; x < width; x++) {
-    let index = 4 * (y * width + x);
-    
-    // Check if this pixel is white in the mask (use a threshold)
-    if (maskBuffer.pixels[index] > 200) {  // Check if R value is close to 255
-      // Copy the pixel from the original image
-      maskedImage.pixels[index] = buffer.pixels[index];       // R
-      maskedImage.pixels[index + 1] = buffer.pixels[index + 1]; // G
-      maskedImage.pixels[index + 2] = buffer.pixels[index + 2]; // B
-      maskedImage.pixels[index + 3] = 255;                    // A
-      copiedPixels++;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let index = 4 * (y * width + x);
+      
+      // Check if this pixel is white in the mask
+      if (maskBuffer.pixels[index] > 200) {
+        // Copy the pixel from the original image
+        maskedImage.pixels[index] = buffer.pixels[index];       // R
+        maskedImage.pixels[index + 1] = buffer.pixels[index + 1]; // G
+        maskedImage.pixels[index + 2] = buffer.pixels[index + 2]; // B
+        maskedImage.pixels[index + 3] = 255;                    // A
+        copiedPixels++;
+      }
     }
   }
-}
 
   console.log("Copied pixels:", copiedPixels);
   
